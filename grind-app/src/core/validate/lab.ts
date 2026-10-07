@@ -1,7 +1,7 @@
 /** A lab panel: biomarker values with their qualifiers and source details. From `backup.js` (`sanitizeLab`). */
 
 import { isValidDateStr, type DateStr } from '../util/dates.ts';
-import { createdAt, field, idOk, inRange, isObject, str } from './fields.ts';
+import { createdAt, field, idOk, inRange, isObject, str, textOr } from './fields.ts';
 import { LAB_RANGE, isRecordSource, type RecordSource } from './ranges.ts';
 
 export type LabQualifier = '<' | '>' | '≤' | '≥';
@@ -35,14 +35,14 @@ export function sanitizeLab(raw: unknown, knownKeys: readonly string[], now: Dat
   for (const key of knownKeys) {
     const rawValue = field(raw.biomarkers, key);
     const value = rawValue == null ? null : Number(rawValue);
-    if (value != null && inRange(value, LAB_RANGE)) biomarkers[key] = value;
+    if (inRange(value, LAB_RANGE)) biomarkers[key] = value;
   }
   const kept = Object.keys(biomarkers);
-  if (!kept.length) return null;
+  if (kept.length === 0) return null;
   const out: LabPanel = {
     id: raw.id,
     date: raw.date,
-    labName: str(raw.labName, 80) || 'Lab panel',
+    labName: textOr(str(raw.labName, 80), 'Lab panel'),
     biomarkers,
     createdAt: createdAt(raw.createdAt, now),
   };
@@ -53,7 +53,7 @@ export function sanitizeLab(raw: unknown, knownKeys: readonly string[], now: Dat
       const qualifier = raw.qualifiers[key];
       if (typeof qualifier === 'string' && QUALIFIERS.includes(qualifier)) qualifiers[key] = qualifier as LabQualifier;
     }
-    if (Object.keys(qualifiers).length) out.qualifiers = qualifiers;
+    if (Object.keys(qualifiers).length > 0) out.qualifiers = qualifiers;
   }
   if (isObject(raw.details)) {
     const details: Record<string, LabValueDetail> = {};
@@ -68,7 +68,7 @@ export function sanitizeLab(raw: unknown, knownKeys: readonly string[], now: Dat
         };
       }
     }
-    if (Object.keys(details).length) out.details = details;
+    if (Object.keys(details).length > 0) out.details = details;
   }
   if (typeof raw.reportedDate === 'string' && isValidDateStr(raw.reportedDate)) out.reportedDate = raw.reportedDate;
   return out;

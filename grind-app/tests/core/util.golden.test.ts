@@ -3,6 +3,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 
 import fixture from '../golden/fixtures/util.json';
+import { testableZones } from '../support/timeZone.ts';
 import { addDays, firstDayOfWeek, localDateStr, parseDateStr, startOfWeekStr } from '@/core/util/dates.ts';
 import { clamp, median, movingAverage, toNum } from '@/core/util/numbers.ts';
 import {
@@ -28,11 +29,13 @@ afterAll(() => {
   process.env.TZ = originalZone;
 });
 
-describe.each(Object.entries(fixture.timeZones))('dates in %s', (zone, cases) => {
+const zones = testableZones(Object.keys(fixture.timeZones) as (keyof typeof fixture.timeZones)[]);
+
+describe.each(zones.map((zone) => [zone, fixture.timeZones[zone]] as const))('dates in %s', (zone, cases) => {
   it('parses exactly the real calendar dates', () => {
     process.env.TZ = zone;
     for (const [text, expected] of cases.parse) {
-      const parsed = parseDateStr(text as string | null);
+      const parsed = parseDateStr(text);
       expect(parsed ? localDateStr(parsed) : null, String(text)).toBe(expected);
     }
   });
@@ -40,7 +43,7 @@ describe.each(Object.entries(fixture.timeZones))('dates in %s', (zone, cases) =>
   it('adds days like the web app, across daylight-saving changes', () => {
     process.env.TZ = zone;
     for (const [date, delta, expected] of cases.addDays) {
-      expect(addDays(date as string, delta as number), `${date} ${delta}`).toBe(expected);
+      expect(addDays(date as string, delta as number), `${String(date)} ${String(delta)}`).toBe(expected);
     }
   });
 });

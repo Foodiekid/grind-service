@@ -37,10 +37,10 @@ const DAY_MACRO_LIMITS = { protein: 1000, carbs: 2000, fat: 1000 } as const;
 function cleanFood(raw: unknown, index: number): FoodEntry | null {
   const name = str(field(raw, 'name'), 120).trim();
   const kcal = foodKcal(field(raw, 'kcal'));
-  if (!name || kcal === undefined || !isObject(raw)) return null;
+  if (name === '' || kcal === undefined || !isObject(raw)) return null;
   const meal = raw.meal;
   const food: FoodEntry = {
-    id: idOk(raw.id) ? raw.id : `f_${index}_${Math.abs(hash(name + kcal))}`,
+    id: idOk(raw.id) ? raw.id : `f_${String(index)}_${String(Math.abs(hash(name + String(kcal))))}`,
     name,
     kcal: Math.round(kcal),
     meal: isMeal(meal) ? meal : 'snack',
@@ -48,15 +48,20 @@ function cleanFood(raw: unknown, index: number): FoodEntry | null {
   copyMacros(raw, food);
   if (typeof raw.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(raw.time)) food.time = raw.time;
   const label = str(raw.label, 30).trim();
-  if (label) food.label = label;
+  if (label !== '') food.label = label;
   const qty = presentNumber(raw.qty, 0.25, 20);
   if (qty !== undefined) food.qty = qty;
   if (isFoodSource(raw.source)) food.source = raw.source;
   copyExtras(raw, food);
   const portion = str(raw.portion, 60).trim();
-  if (portion) food.portion = portion;
+  if (portion !== '') food.portion = portion;
   const grams = Number(raw.grams);
-  if (raw.grams != null && Number.isFinite(grams) && grams > 0 && grams <= 10000) food.grams = Math.round(grams);
+  // Difference from the web app: a weight that rounds to 0 g is dropped. The web app stored it as 0, which its own
+  // check then refused on the next sync or restore, so the value changed just by being saved and read back.
+  // (Missing, null, text and NaN all fail these comparisons, so no separate check is needed.)
+  if (Math.round(grams) > 0 && grams <= 10000) {
+    food.grams = Math.round(grams);
+  }
   return food;
 }
 
@@ -66,7 +71,7 @@ export function sanitizeLog(raw: unknown): DailyLog | null {
   for (const [key, range] of Object.entries(LOG_RANGES) as [LogField, readonly [number, number]][]) {
     // Note: as in the web app, an empty string reads as 0 here (Number('') is 0).
     const value = raw[key] == null ? null : Number(raw[key]);
-    if (value != null && inRange(value, range)) out[key] = WHOLE_LOG_FIELDS.has(key) ? Math.round(value) : value;
+    if (inRange(value, range)) out[key] = WHOLE_LOG_FIELDS.has(key) ? Math.round(value) : value;
   }
   if (Array.isArray(raw.foods)) {
     const foods: FoodEntry[] = [];
@@ -74,22 +79,22 @@ export function sanitizeLog(raw: unknown): DailyLog | null {
       const food = cleanFood(entry, foods.length);
       if (food) foods.push(food);
     }
-    if (foods.length) {
+    if (foods.length > 0) {
       out.foods = foods;
       out.calories = Math.min(20000, foods.reduce((sum, food) => sum + food.kcal, 0));
       for (const [key] of FOOD_MACROS) {
         const withValue = foods.filter((food) => food[key] != null);
-        if (withValue.length) {
+        if (withValue.length > 0) {
           const total = withValue.reduce((sum, food) => sum + (food[key] ?? 0), 0);
           out[key] = Math.min(DAY_MACRO_LIMITS[key], roundTo1(total));
         }
       }
     }
   }
-  if (typeof raw.notes === 'string' && raw.notes) out.notes = str(raw.notes, 2000);
+  if (typeof raw.notes === 'string' && raw.notes !== '') out.notes = str(raw.notes, 2000);
   if (Array.isArray(raw.tags)) {
     const tags = [...new Set(raw.tags.filter(isJournalTag))];
-    if (tags.length) out.tags = tags;
+    if (tags.length > 0) out.tags = tags;
   }
   if (isRecordSource(raw.source)) out.source = raw.source;
   return out;

@@ -24,7 +24,7 @@ export function numberInputError(value: string, rules: NumberInputRules, badInpu
   if (value === '') return '';
   const n = Number(value);
   if (!Number.isFinite(n)) return 'Enter a number.';
-  const unit = rules.unit ? ` ${rules.unit}` : '';
+  const unit = rules.unit !== undefined && rules.unit !== '' ? ` ${rules.unit}` : '';
   if (rules.min !== undefined && n < rules.min) return `Too low — the minimum is ${format(rules.min)}${unit}.`;
   if (rules.max !== undefined && n > rules.max) return `Too high — the maximum is ${format(rules.max)}${unit}.`;
   if (rules.step === 1 && !Number.isInteger(n)) return 'Use a whole number.';

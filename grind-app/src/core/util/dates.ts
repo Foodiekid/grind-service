@@ -17,7 +17,7 @@ export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 export function localDateStr(date: Date): DateStr {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /** Local midnight of the date, or null when the text isn't a real calendar date (`2026-02-30`, `2026-2-3`). */
@@ -26,7 +26,13 @@ export function parseDateStr(text: string | null | undefined): Date | null {
   if (!match) return null;
   const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
   const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+  // JavaScript rolls an impossible date over: 30 Feb becomes 2 Mar, month 13 next January. The day is checked too,
+  // because a date a time zone skipped rolls within its month (Samoa had no 30 Dec 2011: it becomes the 31st). The
+  // year is checked because JavaScript reads years 0 to 99 as 1900 to 1999: `0050-01-01` would become 1950.
+  const isSameYear = date.getFullYear() === year;
+  const isSameMonth = date.getMonth() === month - 1;
+  const isSameDay = date.getDate() === day;
+  return isSameYear && isSameMonth && isSameDay ? date : null;
 }
 
 export function isValidDateStr(text: string | null | undefined): boolean {
@@ -53,7 +59,8 @@ export function startOfWeekStr(date: Date, firstDay: Weekday): DateStr {
   return localDateStr(start);
 }
 
-const SUNDAY_REGIONS = new Set(['US', 'CA', 'MX', 'JP', 'BR', 'IN', 'IL', 'AU', 'PH', 'KR', 'TW', 'HK', 'ZA', 'SA', 'AR', 'CO', 'PE', 'VE']);
+/** Regions whose week starts on Sunday, used when Intl can't say (the web app's list). */
+export const SUNDAY_FIRST_REGIONS: ReadonlySet<string> = new Set(['US', 'CA', 'MX', 'JP', 'BR', 'IN', 'IL', 'AU', 'PH', 'KR', 'TW', 'HK', 'ZA', 'SA', 'AR', 'CO', 'PE', 'VE']);
 
 /** The region of a BCP 47 locale (`en-US` gives `US`, `de` gives `DE`), or '' when unknown. */
 export function localeRegion(locale: string): string {
@@ -69,15 +76,27 @@ interface WeekInfoLocale {
   weekInfo?: { firstDay?: number };
 }
 
-/** The locale's first day of the week, from Intl when the runtime knows it, else from the region. */
-export function firstDayOfWeek(locale: string): Weekday {
+/** The first weekday Intl reports for the locale, or undefined when the runtime (or the locale) doesn't say. */
+function intlFirstDay(locale: string): number | undefined {
   try {
     const intlLocale = new Intl.Locale(locale) as Intl.Locale & WeekInfoLocale;
     const info = typeof intlLocale.getWeekInfo === 'function' ? intlLocale.getWeekInfo() : intlLocale.weekInfo;
-    const firstDay = info?.firstDay;
-    if (firstDay !== undefined && firstDay >= 1 && firstDay <= 7) return firstDay as Weekday;
+    return info?.firstDay;
   } catch {
-    // Unknown locale: fall back to the region below.
+    return undefined;
   }
-  return SUNDAY_REGIONS.has(localeRegion(locale)) ? 7 : 1;
+}
+
+/**
+ * The first day of the week from what Intl reported, else from the region: Sunday in the regions that start the week
+ * on Sunday, Monday elsewhere. Older engines don't report week info, so the fallback is what they use.
+ */
+export function chooseFirstDay(reported: number | undefined, region: string): Weekday {
+  if (reported !== undefined && Number.isInteger(reported) && reported >= 1 && reported <= 7) return reported as Weekday;
+  return SUNDAY_FIRST_REGIONS.has(region) ? 7 : 1;
+}
+
+/** The locale's first day of the week, from Intl when the runtime knows it, else from the region. */
+export function firstDayOfWeek(locale: string): Weekday {
+  return chooseFirstDay(intlFirstDay(locale), localeRegion(locale));
 }

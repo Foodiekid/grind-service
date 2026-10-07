@@ -21,7 +21,9 @@ export function App() {
             type="button"
             className="tab"
             aria-current={t.id === tab ? 'page' : undefined}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+            }}
           >
             {t.label}
           </button>

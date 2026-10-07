@@ -40,7 +40,8 @@ function jsonHasShape(text: string, shape: 'object' | 'array' | undefined): bool
   } catch {
     return false;
   }
-  if (parsed !== null && typeof parsed !== 'object') return false;
+  // Only JSON objects, arrays and null (typeof null is 'object').
+  if (typeof parsed !== 'object') return false;
   if (shape === 'array' && !Array.isArray(parsed)) return false;
   if (shape === 'object' && Array.isArray(parsed)) return false;
   return true;
@@ -64,5 +65,5 @@ export function sanitizeSettings(raw: unknown, keys: readonly string[]): Setting
     values[key] = value;
   }
   if (Object.values(values).reduce((total, value) => total + value.length, 0) > MAX_SETTINGS_TOTAL) return null;
-  return Object.keys(values).length ? { key: 'main', values } : null;
+  return Object.keys(values).length > 0 ? { key: 'main', values } : null;
 }

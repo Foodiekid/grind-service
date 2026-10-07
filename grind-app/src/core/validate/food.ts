@@ -56,51 +56,58 @@ export function copyExtras(from: unknown, to: NutritionExtras): void {
   }
 }
 
+/** A `[label, grams]` pair with 0.05 to 5,000 g. A portion that rounds to 0 g is dropped (see sanitizeFavorite). */
+function isPlausiblePortion(portion: unknown): portion is [string, unknown] {
+  if (!Array.isArray(portion) || typeof portion[0] !== 'string') return false;
+  const grams = Number(portion[1]);
+  return roundTo1(grams) > 0 && grams <= 5000;
+}
+
 function cleanPortions(raw: unknown): Portion[] | null {
   if (!Array.isArray(raw)) return null;
   const portions = raw
     .slice(0, 8)
-    .filter((p): p is [string, unknown] =>
-      Array.isArray(p) && typeof p[0] === 'string' && Number.isFinite(+p[1]) && +p[1] > 0 && +p[1] <= 5000)
-    .map(([label, grams]): Portion => [label.slice(0, 60), roundTo1(+(grams as number))]);
-  return portions.length ? portions : null;
+    .filter(isPlausiblePortion)
+    .map(([label, grams]): Portion => [label.slice(0, 60), roundTo1(Number(grams))]);
+  return portions.length > 0 ? portions : null;
 }
 
 export function sanitizeFavorite(raw: unknown, now: Date): FavoriteFood | null {
   if (!isObject(raw) || !idOk(raw.id)) return null;
   const name = str(raw.name, 120).trim();
   const kcal = foodKcal(raw.kcal);
-  if (!name || kcal === undefined) return null;
+  if (name === '' || kcal === undefined) return null;
   const out: FavoriteFood = {
     id: raw.id,
     name,
     kcal: Math.round(kcal),
     source: isFoodSource(raw.source) ? raw.source : 'estimate',
-    createdAt: '',
+    createdAt: createdAt(raw.createdAt, now),
   };
   copyMacros(raw, out);
   const serving = str(raw.serving, 60).trim();
-  if (serving) out.serving = serving;
+  if (serving !== '') out.serving = serving;
   copyExtras(raw, out);
   const grams = Number(raw.g);
-  if (raw.g != null && Number.isFinite(grams) && grams > 0 && grams <= 5000) {
+  // Difference from the web app: grams that round to 0 are dropped (stored as 0, the web app refused them next time).
+  // Missing, null, text and NaN all fail these comparisons.
+  if (roundTo1(grams) > 0 && grams <= 5000) {
     out.g = roundTo1(grams);
     const portions = cleanPortions(raw.pt);
     if (portions) out.pt = portions;
   }
-  out.createdAt = createdAt(raw.createdAt, now);
   return out;
 }
 
 export function sanitizeMeal(raw: unknown, now: Date): SavedMeal | null {
   if (!isObject(raw) || !idOk(raw.id)) return null;
   const name = str(raw.name, 40).trim();
-  if (!name || !Array.isArray(raw.items)) return null;
+  if (name === '' || !Array.isArray(raw.items)) return null;
   const items: MealItem[] = [];
   for (const entry of raw.items.slice(0, 20)) {
     const itemName = str(field(entry, 'name'), 120).trim();
     const kcal = foodKcal(field(entry, 'kcal'));
-    if (!itemName || kcal === undefined) continue;
+    if (itemName === '' || kcal === undefined) continue;
     const item: MealItem = { name: itemName, kcal: Math.round(kcal) };
     copyMacros(entry, item);
     const source = field(entry, 'source');
@@ -108,6 +115,6 @@ export function sanitizeMeal(raw: unknown, now: Date): SavedMeal | null {
     copyExtras(entry, item);
     items.push(item);
   }
-  if (!items.length) return null;
+  if (items.length === 0) return null;
   return { id: raw.id, name, items, createdAt: createdAt(raw.createdAt, now) };
 }

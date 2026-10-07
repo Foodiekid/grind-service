@@ -1,6 +1,6 @@
 /** The user's profile: display name, goal and avatar. From `backup.js` (`sanitizeProfile`). */
 
-import { isObject, str } from './fields.ts';
+import { isObject, str, textOr } from './fields.ts';
 
 export interface Profile {
   key: 'current_user';
@@ -17,7 +17,7 @@ export function sanitizeProfile(raw: unknown): Profile | null {
   const avatar = raw.avatarUrl;
   return {
     key: 'current_user',
-    name: str(raw.name, 60).trim() || 'Athlete',
+    name: textOr(str(raw.name, 60).trim(), 'Athlete'),
     goal: str(raw.goal, 160).trim(),
     avatarUrl: typeof avatar === 'string' && avatar.length < 600000 && AVATAR.test(avatar) ? avatar : null,
   };

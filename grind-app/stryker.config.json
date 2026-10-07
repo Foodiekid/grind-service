@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing of the business logic: Stryker plants small bugs in src/core and checks a test fails for each; the build breaks below the 'break' score. It uses the command runner (our normal `vitest run`, mutant switched on by an environment variable) because Stryker's vitest runner does not activate mutants under vitest 5; the command runner also keeps every time-zone test running. Incremental: results are cached in reports/. Run it through `npm run mutation` (changed code plus open survivors, daily in CI) or `npm run mutation:full` (weekly); both write docs/MUTATION-LOG.md (scripts/mutation/run.mjs).",
+  "testRunner": "command",
+  "checkers": [
+    "typescript"
+  ],
+  "tsconfigFile": "tsconfig.json",
+  "mutate": [
+    "src/core/**/*.ts"
+  ],
+  "coverageAnalysis": "off",
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html",
+    "json"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 80,
+    "break": 97
+  },
+  "tempDirName": ".stryker-tmp",
+  "commandRunner": {
+    "command": "npx vitest run --exclude 'tests/core/performance/**' --reporter=dot"
+  },
+  "concurrency": 6,
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json"
+}

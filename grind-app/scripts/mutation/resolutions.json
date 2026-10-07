@@ -1,0 +1,178 @@
+{
+  "_comment": "How each surviving mutant was resolved: why no test caught it (cause) and what was done (fix). kind: 'test' (a new test kills it), 'code' (the code was changed or removed), 'equivalent' (it can't change any result; accepted, with a reason a reviewer can check). An entry matches a mutant in the same file whose source line or replaced code contains 'code' (and, if given, whose mutator is in 'mutators'). Add an entry for every survivor you resolve; the mutation report shows them next to each run.",
+  "resolutions": [
+    {
+      "file": "src/core/util/dates.ts",
+      "code": "/^(\\d{4})-(\\d{2})-(\\d{2})$/",
+      "mutators": ["Regex"],
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No test passed text with something before or after a valid date, so dropping the ^ or $ anchor went unnoticed: '2026-10-07junk' would have been accepted.",
+      "fix": "Test 'accepts only the whole text as a date, nothing before or after it' (validate.edges.test.ts)."
+    },
+    {
+      "file": "src/core/util/dates.ts",
+      "code": "exec(text ?? '')",
+      "mutators": ["StringLiteral"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: for a missing text any fallback string fails the date pattern the same way, so the result is null either way.",
+      "fix": "Accepted; no test can tell the two apart."
+    },
+    {
+      "file": "src/core/util/dates.ts",
+      "code": "const isSameMonth",
+      "mutators": ["ConditionalExpression"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: any month JavaScript rolls over also changes the year (month 00 or 13+) or the day (30 Feb becomes 2 Mar), so the month check never decides alone.",
+      "fix": "Accepted; the check is kept because 'year, month and day all match' is the plain round-trip check."
+    },
+    {
+      "file": "src/core/util/dates.ts",
+      "code": "maximize().region ?? ''",
+      "mutators": ["StringLiteral"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: maximize() fills in a region for every locale Intl can parse, so the fallback is never used; an unknown region and '' both give a Monday week start.",
+      "fix": "Accepted; no input reaches the fallback."
+    },
+    {
+      "file": "src/core/util/dates.ts",
+      "code": "return undefined;",
+      "mutators": ["BlockStatement"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: an empty catch block also returns undefined.",
+      "fix": "Accepted; no test can tell the two apart."
+    },
+    {
+      "file": "src/core/validate/settings.ts",
+      "code": "return false;",
+      "mutators": ["BlockStatement"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: without the return, parsed stays undefined and the typeof check right after returns false all the same.",
+      "fix": "Accepted; the misplaced 'Stryker disable' comment was removed instead of fixed."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "version < 1 || version > 2",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "Tests used versions 1, 2 and 3 but never 0, so the lower limit (version < 1) wasn't pinned.",
+      "fix": "Test 'accepts format versions 1 and 2 (or none), and refuses anything else' with 0, 3, 1.5 and '1'."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "LIMITS.",
+      "mutators": ["ConditionalExpression", "EqualityOperator"],
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No test sent a backup at or just over a size limit, so a limit could be off by one or ignored entirely.",
+      "fix": "Test 'accepts each list at its limit and refuses one record more', for all six lists."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "seenRoutes",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "Routes were always null in backup tests (no route cleaner), so duplicate and invalid routes were never exercised.",
+      "fix": "Test 'keeps the first of two routes with the same id and counts the second as dropped'."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "return true;",
+      "mutators": ["BooleanLiteral"],
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "Part of the route filter: routes were always null in backup tests, so keeping a valid route was never checked.",
+      "fix": "Test 'keeps the first of two routes with the same id and counts the second as dropped'."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "context.settingKeys.length > 0",
+      "kind": "code",
+      "date": "2026-10-07",
+      "cause": "Redundant check: sanitizeSettings already returns null when the backup has no settings or the app knows none, so no test could ever fail.",
+      "fix": "Removed the check; validateBackup calls sanitizeSettings directly. Golden and edge tests unchanged and green."
+    },
+    {
+      "file": "src/core/validate/backup.ts",
+      "code": "const rejected",
+      "mutators": ["ArithmeticOperator"],
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No test checked the dropped-record count with invalid records in several lists at once, so a wrong sign went unnoticed.",
+      "fix": "Test 'counts every dropped record, per list' with 1 to 6 invalid records per list."
+    },
+    {
+      "file": "src/core/validate/fields.ts",
+      "code": "(h << 5) - h + c.charCodeAt(0)",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "Food ids use the absolute value of the hash, and flipping the sign of every character flips only the hash's sign, so the id tests couldn't see it.",
+      "fix": "Test 'hashes text like the web app' pins hash('ab') = 3105 and hash('hello') = 99162322 (Java's String.hashCode)."
+    },
+    {
+      "file": "src/core/validate/food.ts",
+      "code": "raw.items.slice(0, 20)",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No saved meal in the tests had more than 20 items, so the cap wasn't pinned.",
+      "fix": "Test 'keeps at most 20 items' (25 in, 20 out)."
+    },
+    {
+      "file": "src/core/validate/lab.ts",
+      "code": "edited: detail.edited === true",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No lab in the tests had value details, so the 'edited' flag was never checked.",
+      "fix": "Test 'marks a value as edited only when the backup says exactly true'."
+    },
+    {
+      "file": "src/core/validate/workout.ts",
+      "code": "const isPlausibleWeight",
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No test used weight 0 (body-weight sets) or a negative weight, so the >= 0 limit wasn't pinned.",
+      "fix": "Test 'keeps weight 0 (body-weight sets) and refuses negative weights'."
+    },
+    {
+      "file": "src/core/validate/workout.ts",
+      "code": "raw.exercises.slice(0, 60) : []",
+      "mutators": ["MethodExpression"],
+      "kind": "test",
+      "date": "2026-10-07",
+      "cause": "No workout in the tests had more than 60 exercises, so the cap wasn't pinned.",
+      "fix": "Test 'keeps at most 60 exercises' (70 in, 60 out)."
+    },
+    {
+      "file": "src/core/validate/workout.ts",
+      "code": "raw.exercises.slice(0, 60) : []",
+      "mutators": ["ArrayDeclaration"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: a text entry in the fallback list has no name, so it is skipped; the workout has no exercises either way.",
+      "fix": "Accepted; no test can tell the two apart."
+    },
+    {
+      "file": "src/core/validate/workout.ts",
+      "code": "rawSets.slice(0, 60) : []",
+      "mutators": ["ArrayDeclaration"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: a text entry in the fallback list has no weight or reps, so the set is dropped either way.",
+      "fix": "Accepted; no test can tell the two apart."
+    },
+    {
+      "file": "src/core/validate/workout.ts",
+      "code": "duration >= 0 && duration <= 1440",
+      "mutators": ["EqualityOperator"],
+      "kind": "equivalent",
+      "date": "2026-10-07",
+      "cause": "Equivalent: a duration of 0 is kept as 0 or replaced by the fallback 0, the same result.",
+      "fix": "Accepted; no test can tell the two apart."
+    }
+  ]
+}

@@ -6,7 +6,7 @@
  * file with nothing valid is refused with a message the user can act on.
  */
 
-import { isObject } from './fields.ts';
+import { isObject, truthy } from './fields.ts';
 import { sanitizeLog, type DailyLog } from './dailyLog.ts';
 import { sanitizeFavorite, sanitizeMeal, type FavoriteFood, type SavedMeal } from './food.ts';
 import { sanitizeLab, type LabPanel } from './lab.ts';
@@ -59,12 +59,12 @@ const notNull = <T>(value: T | null): value is T => value !== null;
 
 export function validateBackup(doc: unknown, context: BackupContext): CheckedBackup {
   if (!isObject(doc) || Array.isArray(doc)) throw new BackupError('This file is not a GRIND backup.');
-  if (doc.format && doc.format !== 'grind-backup') throw new BackupError('This file is not a GRIND backup.');
+  if (truthy(doc.format) && doc.format !== 'grind-backup') throw new BackupError('This file is not a GRIND backup.');
   const version = doc.version;
   if (version != null && (typeof version !== 'number' || !Number.isInteger(version) || version < 1 || version > 2)) {
     throw new BackupError('This backup was made by a newer (or unknown) version of GRIND. Update the app before restoring it.');
   }
-  if (doc.encrypted) throw new BackupError('Encrypted backup — passphrase required.');
+  if (truthy(doc.encrypted)) throw new BackupError('Encrypted backup — passphrase required.');
 
   const workoutsIn = list(doc.workouts);
   const logsIn = Array.isArray(doc.dailyLogs) ? doc.dailyLogs : Object.values(isObject(doc.dailyLogs) ? doc.dailyLogs : {});
@@ -91,15 +91,14 @@ export function validateBackup(doc: unknown, context: BackupContext): CheckedBac
     seenRoutes.add(route.row.id);
     return true;
   });
-  const profile = doc.profile ? sanitizeProfile(doc.profile) : null;
-  const settings = doc.settings && context.settingKeys.length
-    ? sanitizeSettings({ values: doc.settings }, context.settingKeys)
-    : null;
+  const profile = truthy(doc.profile) ? sanitizeProfile(doc.profile) : null;
+  // Null when the backup has no settings, none the app knows, or any invalid one.
+  const settings = sanitizeSettings({ values: doc.settings }, context.settingKeys);
 
   const rejected = workoutsIn.length - workouts.length + logsIn.length - dailyLogs.length + labsIn.length - labs.length
     + favoritesIn.length - favorites.length + mealsIn.length - meals.length + routesIn.length - routes.length;
-  if (!workouts.length && !dailyLogs.length && !labs.length && !favorites.length && !meals.length && !routes.length
-    && !profile && !settings) {
+  const nothingValid = [workouts, dailyLogs, labs, favorites, meals, routes].every((list) => list.length === 0);
+  if (nothingValid && !profile && !settings) {
     throw new BackupError('No valid records found in this file.');
   }
   return { workouts, dailyLogs, labs, favorites, meals, routes, profile, settings: settings?.values ?? null, rejected };

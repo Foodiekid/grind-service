@@ -1,0 +1,52 @@
+{
+  "about": "Every problem code the GRIND API can return (urn:grind:problem:<code>), with what the app does and says. The app maps codes to messages from this file, never from the problem's title. Tests in grind-api and grind-partner fail the build if a code is missing here, listed here but not in the code, or given a different status.",
+  "retry": {
+    "never": "Retrying the same request fails again.",
+    "later": "Retry with exponential backoff and jitter, honouring Retry-After.",
+    "after_refetch": "Fetch the latest data, then retry the change on top of it.",
+    "after_sign_in": "Refresh or renew the session, then retry once.",
+    "after_update": "Only after the app is updated."
+  },
+  "action": {
+    "report": "A bug in the app or server: show the message with the support code, record it in diagnostics.",
+    "fix": "The user can fix it (shorter text, smaller file, other input).",
+    "sign_in": "Take the user to sign in again.",
+    "update": "Show the update screen with a link to the store.",
+    "wait": "Keep the change queued; sync retries in the background.",
+    "refetch": "Sync down first, then retry automatically.",
+    "reconnect": "Ask the user to connect the partner again.",
+    "stop": "Stop syncing for this account and explain."
+  },
+  "codes": [
+    { "code": "validation_failed", "owner": "platform", "status": 400, "retry": "never", "action": "report", "message": "Something in this request wasn't right. We've noted it." },
+    { "code": "client_header", "owner": "platform", "status": 400, "retry": "never", "action": "report", "message": "Something went wrong. We've noted it." },
+    { "code": "correlation_id", "owner": "platform", "status": 400, "retry": "never", "action": "report", "message": "Something went wrong. We've noted it." },
+    { "code": "unauthorized", "owner": "platform", "status": 401, "retry": "after_sign_in", "action": "sign_in", "message": "Please sign in again to keep syncing." },
+    { "code": "forbidden", "owner": "platform", "status": 403, "retry": "never", "action": "report", "message": "This action isn't allowed. We've noted it." },
+    { "code": "length_required", "owner": "platform", "status": 411, "retry": "never", "action": "report", "message": "Something went wrong. We've noted it." },
+    { "code": "too_large", "owner": "platform", "status": 413, "retry": "never", "action": "fix", "message": "That's too large to sync. Try something smaller." },
+    { "code": "upgrade_required", "owner": "platform", "status": 426, "retry": "after_update", "action": "update", "message": "Please update GRIND to keep syncing." },
+    { "code": "unavailable", "owner": "platform", "status": 503, "retry": "later", "action": "wait", "message": "GRIND is busy right now. Your changes are safe and will sync shortly." },
+    { "code": "internal", "owner": "platform", "status": 500, "retry": "later", "action": "report", "message": "Something went wrong on our side. Your changes are safe; we'll try again." },
+
+    { "code": "invalid_record", "owner": "core", "status": 400, "retry": "never", "action": "report", "message": "This entry couldn't be synced. We've noted it." },
+    { "code": "inline_too_large", "owner": "core", "status": 400, "retry": "never", "action": "report", "message": "This entry couldn't be synced. We've noted it." },
+    { "code": "blob_too_large", "owner": "core", "status": 400, "retry": "never", "action": "fix", "message": "This file is too large to sync." },
+    { "code": "invalid_cursor", "owner": "core", "status": 400, "retry": "never", "action": "report", "message": "Sync needs to start over. It will do this automatically." },
+    { "code": "blob_not_owned", "owner": "core", "status": 403, "retry": "never", "action": "report", "message": "This entry couldn't be synced. We've noted it." },
+    { "code": "quota_exceeded", "owner": "core", "status": 403, "retry": "never", "action": "fix", "message": "Your storage is full. Delete old routes or photos to keep syncing." },
+    { "code": "not_found", "owner": "core", "status": 404, "retry": "never", "action": "refetch", "message": "This item no longer exists." },
+    { "code": "stale_revision", "owner": "core", "status": 409, "retry": "after_refetch", "action": "refetch", "message": "This was changed on another device. Showing the latest version." },
+    { "code": "keyring_changed", "owner": "core", "status": 409, "retry": "after_refetch", "action": "refetch", "message": "Your encryption key changed on another device. Unlock again to continue." },
+    { "code": "account_deleted", "owner": "core", "status": 410, "retry": "never", "action": "stop", "message": "This account is being deleted, so nothing more is synced." },
+    { "code": "blob_missing", "owner": "core", "status": 422, "retry": "later", "action": "wait", "message": "A file is still uploading. It will sync shortly." },
+    { "code": "blob_size_mismatch", "owner": "core", "status": 422, "retry": "never", "action": "report", "message": "A file didn't upload correctly. We'll upload it again." },
+    { "code": "events_unavailable", "owner": "core", "status": 503, "retry": "later", "action": "wait", "message": "GRIND is busy right now. Your changes are safe and will sync shortly." },
+
+    { "code": "invalid_connection_request", "owner": "partner", "status": 400, "retry": "never", "action": "report", "message": "Connecting didn't work. We've noted it." },
+    { "code": "redirect_uri_not_allowed", "owner": "partner", "status": 400, "retry": "never", "action": "report", "message": "Connecting didn't work. We've noted it." },
+    { "code": "connection_not_configured", "owner": "partner", "status": 404, "retry": "never", "action": "stop", "message": "This service isn't available yet." },
+    { "code": "connection_rejected", "owner": "partner", "status": 422, "retry": "never", "action": "reconnect", "message": "The connection was refused. Please connect again." },
+    { "code": "provider_unavailable", "owner": "partner", "status": 503, "retry": "later", "action": "wait", "message": "The service didn't answer. Try again in a moment." }
+  ]
+}

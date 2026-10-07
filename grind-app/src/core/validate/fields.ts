@@ -31,9 +31,19 @@ export function presentNumber(value: unknown, min: number, max: number): number 
 
 export const roundTo1 = (n: number): number => Math.round(n * 10) / 10;
 
-/** The web app's 32-bit string hash, used to give food entries without an id a stable one. */
+/**
+ * The web app's 32-bit string hash, used to give food entries without an id a stable one. It walks code points and
+ * reads each one's first UTF-16 unit, exactly as the original; ids must match the web app's, so it stays as is.
+ */
 export const hash = (text: string): number =>
+  // eslint-disable-next-line @typescript-eslint/no-misused-spread -- must match the web app's ids bit for bit
   [...text].reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+
+/** The text, or `fallback` when it is empty. */
+export const textOr = (text: string, fallback: string): string => (text === '' ? fallback : text);
+
+/** JavaScript truthiness of an untrusted value, stated explicitly (the web app tested these fields this way). */
+export const truthy = (value: unknown): boolean => Boolean(value);
 
 /** Time an object was created: the stored text (cut to 40 characters), else now. */
 export const createdAt = (value: unknown, now: Date): string =>

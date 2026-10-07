@@ -136,7 +136,43 @@ const strictDates = (input, output) => {
   }
   return output;
 };
-const runStrict = (make, sanitize) => run(make, sanitize).map(({ input, output }) => ({ input, output: strictDates(input, output) }));
+// Second deliberate difference: a weight that rounds to 0 g (food grams, favourite g, portion grams) is dropped; the
+// web app stored it as 0, which its own check refused on the next sync or restore.
+/** A copy of `object` without `key`, keeping the other keys in their order. */
+const withoutKey = (object, key) => {
+  const copy = { ...object };
+  delete copy[key];
+  return copy;
+};
+
+const zeroGrams = (output) => {
+  if (!output) return output;
+  let next = output;
+  let changed = false;
+
+  const hasZeroGramFood = Array.isArray(next.foods) && next.foods.some((food) => food.grams === 0);
+  if (hasZeroGramFood) {
+    next = { ...next, foods: next.foods.map((food) => (food.grams === 0 ? withoutKey(food, 'grams') : food)) };
+    changed = true;
+  }
+
+  // A favourite without a weight keeps no portions either: the port reads portions only alongside the weight.
+  if (next.g === 0) {
+    next = withoutKey(withoutKey(next, 'g'), 'pt');
+    changed = true;
+  }
+
+  const hasZeroGramPortion = Array.isArray(next.pt) && next.pt.some((portion) => portion[1] === 0);
+  if (hasZeroGramPortion) {
+    const portions = next.pt.filter((portion) => portion[1] !== 0);
+    next = portions.length > 0 ? { ...next, pt: portions } : withoutKey(next, 'pt');
+    changed = true;
+  }
+
+  if (changed) deviations += 1;
+  return next;
+};
+const runStrict = (make, sanitize) => run(make, sanitize).map(({ input, output }) => ({ input, output: zeroGrams(strictDates(input, output)) }));
 
 const HAND = {
   log: [
@@ -158,7 +194,7 @@ for (const [store, kind] of SYNC_KINDS) {
     const value = make();
     const ownKey = { dailyLogs: value?.date, profile: 'current_user', settings: 'main' }[store] ?? value?.id;
     const key = (maybe(0.75) ? ownKey : pick(['current_user', 'main', 'other', '2026-10-07'])) ?? 'other';
-    sync.push({ kind, key: String(key), value, output: strictDates(value, sanitizeForSync(store, String(key), value)) });
+    sync.push({ kind, key: String(key), value, output: zeroGrams(strictDates(value, sanitizeForSync(store, String(key), value))) });
   }
 }
 
@@ -180,10 +216,10 @@ const fixture = {
   now: NOW,
   labKeys: BIOMARKER_KEYS,
   settingKeys: SETTING_KEYS,
-  log: [...HAND.log.map((input) => ({ input, output: backup.sanitizeLog(input) })), ...runStrict(randomLog, backup.sanitizeLog)],
+  log: [...HAND.log.map((input) => ({ input, output: zeroGrams(backup.sanitizeLog(input)) })), ...runStrict(randomLog, backup.sanitizeLog)],
   workout: [...HAND.workout.map((input) => ({ input, output: backup.sanitizeWorkout(input) })), ...runStrict(randomWorkout, backup.sanitizeWorkout)],
   lab: runStrict(randomLab, (input) => backup.sanitizeLab(input, BIOMARKER_KEYS)),
-  favorite: run(randomFavorite, backup.sanitizeFavorite),
+  favorite: runStrict(randomFavorite, backup.sanitizeFavorite),
   meal: run(randomMeal, backup.sanitizeMeal),
   profile: run(randomProfile, backup.sanitizeProfile),
   settings: run(randomSettings, (input) => backup.sanitizeSettings(input, SETTING_KEYS)),

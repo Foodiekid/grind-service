@@ -1,0 +1,131 @@
+# Checks every push and pull request: the app (types, lint, golden and property tests), the backend (build and every
+# test, on a real embedded Postgres) and the Terraform (format, validate, plan tests with mock providers).
+# Mutation testing runs on a schedule, not on every push: daily only the mutants in code or tests changed since the
+# last run (incremental, cache kept between runs), and a full run every Monday that also refreshes the cache.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC: full mutation testing
+    - cron: '0 6 * * 0,2-6' # other days 06:00 UTC: mutation testing of changes only
+  workflow_dispatch:
+    inputs:
+      mutation:
+        description: Mutation testing mode
+        type: choice
+        options: [incremental, full]
+        default: incremental
+
+permissions:
+  contents: read
+
+# A new push cancels the checks of the previous one; a scheduled mutation run is never cancelled by a push.
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  app:
+    name: App checks
+    if: github.event_name != 'schedule' # the schedule runs mutation testing only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: grind-app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: grind-app/package-lock.json
+      - run: npm ci
+      - run: npm run check
+        env:
+          GRIND_PERF_FACTOR: '2' # shared CI runners are about 2x slower than the laptop the budgets are set on
+
+  app-mutation:
+    name: App mutation testing
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: grind-app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: grind-app/package-lock.json
+      - run: npm ci
+      # Results of earlier runs, so an incremental run retests only what changed. Each run saves a new cache entry;
+      # the newest one is restored.
+      - uses: actions/cache@v4
+        with:
+          path: grind-app/reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.run_id }}
+          restore-keys: stryker-incremental-
+      - name: Mutation testing
+        env:
+          FULL_RUN: ${{ github.event.schedule == '0 6 * * 1' || inputs.mutation == 'full' }}
+        run: |
+          if [ "$FULL_RUN" = "true" ]; then npm run mutation:full; else npm run mutation; fi
+      - name: Mutation log in the run summary
+        if: always()
+        run: if [ -f ../docs/MUTATION-LOG.md ]; then cat ../docs/MUTATION-LOG.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: |
+            grind-app/reports/mutation
+            docs/MUTATION-LOG.md
+            docs/mutation/history.json
+
+  backend:
+    name: Backend build and tests
+    if: github.event_name != 'schedule' # the schedule runs mutation testing only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: grind-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: ./mvnw -B -ntp verify
+
+  terraform:
+    name: Terraform checks
+    if: github.event_name != 'schedule' # the schedule runs mutation testing only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: grind-service/deploy/terraform
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.5
+      - run: terraform fmt -check -recursive
+      - name: Plan tests (mock providers, no cloud account)
+        run: |
+          for module in services spend_alert edge; do
+            (cd "modules/$module" && terraform init -input=false && terraform test)
+          done
+      - name: Validate environments
+        run: |
+          for env in dev prod; do
+            (cd "envs/$env" && terraform init -input=false -backend=false && terraform validate)
+          done

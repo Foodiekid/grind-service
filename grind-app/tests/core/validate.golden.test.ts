@@ -47,20 +47,20 @@ const sanitizers: Record<string, (input: unknown) => unknown> = {
 };
 
 describe.each(Object.keys(sanitizers))('%s', (name) => {
-  const cases = fixture[name as keyof typeof sanitizers & keyof Fixture] as Case[];
+  const cases = fixture[name as 'log'];
   const sanitize = sanitizers[name] as (input: unknown) => unknown;
 
-  it(`cleans all ${cases.length} cases exactly like the web app`, () => {
+  it(`cleans all ${String(cases.length)} cases exactly like the web app`, () => {
     cases.forEach(({ input, output }, index) => {
-      expect(sanitize(input), `case ${index}: ${JSON.stringify(input)?.slice(0, 300)}`).toStrictEqual(output);
+      expect(sanitize(input), `case ${String(index)}: ${(JSON.stringify(input) as string | undefined)?.slice(0, 300) ?? 'undefined'}`).toStrictEqual(output);
     });
   });
 });
 
 describe('records from sync', () => {
-  it(`accepts or refuses all ${fixture.sync.length} like the web app, including records filed under the wrong key`, () => {
+  it(`accepts or refuses all ${String(fixture.sync.length)} like the web app, including records filed under the wrong key`, () => {
     fixture.sync.forEach(({ kind, key, value, output }, index) => {
-      expect(sanitizeSyncedRecord(kind, key, value, context), `case ${index} (${kind} ${key})`).toStrictEqual(output);
+      expect(sanitizeSyncedRecord(kind, key, value, context), `case ${String(index)} (${kind} ${key})`).toStrictEqual(output);
     });
   });
 });

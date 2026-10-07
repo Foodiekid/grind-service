@@ -36,6 +36,6 @@ export function fromDisplayWeight(value: number | null, unit: WeightUnit): numbe
 
 /** `250 ml`, `1.5 L` or `8 oz`. */
 export function formatVolume(ml: number, imperial: boolean): string {
-  if (imperial) return `${Math.round(ml / ML_PER_OZ)} oz`;
-  return ml >= 1000 ? `${+(ml / 1000).toFixed(2)} L` : `${Math.round(ml)} ml`;
+  if (imperial) return `${String(Math.round(ml / ML_PER_OZ))} oz`;
+  return ml >= 1000 ? `${String(+(ml / 1000).toFixed(2))} L` : `${String(Math.round(ml))} ml`;
 }

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,6 +47,14 @@ class ConnectionServiceTest {
 
     private static final String REDIRECT_URI = "com.grindandtrain.app:/oauth/oura";
     private static final PartnerId OURA = PartnerId.of("oura");
+    /**
+     * Timeouts for every test except the timeout test: generous, so a slow or busy machine (first request in a fresh
+     * JVM, a CI runner under load) never turns a behaviour test into a timing test.
+     */
+    private static final Duration GENEROUS_TIMEOUT = Duration.ofSeconds(30);
+    /** The timeout test's limit, far below how long its provider sleeps, so the margin survives a slow machine. */
+    private static final Duration SHORT_REQUEST_TIMEOUT = Duration.ofMillis(500);
+    private static final long SLOW_PROVIDER_MILLIS = 10_000;
     private static final String TOKENS_JSON = """
             {"access_token":"access-abc","refresh_token":"refresh-def","expires_in":86400,
              "token_type":"bearer","scope":"daily heartrate"}""";
@@ -56,6 +65,7 @@ class ConnectionServiceTest {
     private final AtomicReference<String> lastContentType = new AtomicReference<>();
 
     private HttpServer provider;
+    private ExecutorService providerThreads;
     private volatile int status;
     private volatile String body;
     private volatile long delayMillis;
@@ -67,21 +77,27 @@ class ConnectionServiceTest {
         body = TOKENS_JSON;
         delayMillis = 0;
         provider = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        provider.setExecutor(Executors.newCachedThreadPool());
+        providerThreads = Executors.newCachedThreadPool();
+        provider.setExecutor(providerThreads);
         provider.createContext("/oauth/token", this::answer);
         provider.start();
 
+        connectionService = serviceWithRequestTimeout(GENEROUS_TIMEOUT);
+    }
+
+    private ConnectionService serviceWithRequestTimeout(Duration requestTimeout) {
         var oura = new PartnerProperties.ProviderSettings(
                 "http://127.0.0.1:" + provider.getAddress().getPort() + "/oauth/token",
                 "grind-client", "grind-secret", List.of(REDIRECT_URI),
-                Duration.ofSeconds(1), Duration.ofMillis(500));
-        connectionService = new ConnectionService(new PartnerProperties(Map.of("oura", oura)),
+                GENEROUS_TIMEOUT, requestTimeout);
+        return new ConnectionService(new PartnerProperties(Map.of("oura", oura)),
                 new OAuthTokenClient(RestClient.builder()), new AuditLogger());
     }
 
     @AfterEach
     void tearDown() {
         provider.stop(0);
+        providerThreads.shutdownNow(); // wakes a provider still sleeping in the timeout test
     }
 
     @Test
@@ -144,11 +160,16 @@ class ConnectionServiceTest {
 
     @Test
     void slowProviderTimesOut() {
-        delayMillis = 2_000;
+        ConnectionService impatient = serviceWithRequestTimeout(SHORT_REQUEST_TIMEOUT);
+        delayMillis = SLOW_PROVIDER_MILLIS;
         long startedAt = System.nanoTime();
+
         assertFailsWith(PartnerErrorCode.PROVIDER_UNAVAILABLE,
-                () -> connectionService.exchange(user, OURA, new TokenGrant.Refresh("refresh-old")));
-        assertThat(Duration.ofNanos(System.nanoTime() - startedAt)).isLessThan(Duration.ofMillis(1_500));
+                () -> impatient.exchange(user, OURA, new TokenGrant.Refresh("refresh-old")));
+
+        // Gave up long before the provider answered: proves the timeout, with seconds of room for a slow machine.
+        Duration waited = Duration.ofNanos(System.nanoTime() - startedAt);
+        assertThat(waited).isLessThan(Duration.ofMillis(SLOW_PROVIDER_MILLIS / 2));
     }
 
     @Test

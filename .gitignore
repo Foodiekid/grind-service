@@ -86,3 +86,10 @@ Thumbs.db
 *~
 *.log
 logs/
+
+# ── Test reports ──
+grind-app/reports/
+grind-app/.stryker-tmp/
+# Mutation-testing results, rewritten by every run (scripts/mutation/run.mjs); resolutions.json stays tracked.
+docs/MUTATION-LOG.md
+docs/mutation/

@@ -16,7 +16,7 @@ export function median(values: readonly number[]): number | null {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   // The middle value, or the two middle values when the count is even.
-  const middle = sorted.slice(sorted.length % 2 ? mid : mid - 1, mid + 1);
+  const middle = sorted.slice(sorted.length % 2 === 1 ? mid : mid - 1, mid + 1);
   return middle.reduce((a, b) => a + b, 0) / middle.length;
 }
 
