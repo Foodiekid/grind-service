@@ -1,0 +1,27 @@
+# Defaults for every service that uses grind-core (grind-api, grind-worker). Lowest precedence: the services' own
+# settings and the deploy settings override them (see GrindDefaultsEnvironmentPostProcessor in grind-common).
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 5           # per instance; Terraform checks max instances x this against the database
+      schema: grind                  # every table lives in schema grind, never public
+
+# Services with a database are ready only when it answers.
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: readinessState, db
+
+grind:
+  core:
+    storage:
+      url-ttl: 15m
+    limits:
+      max-inline-bytes: 4096         # 4 KiB; larger ciphertext goes to R2 (docs/grind-database.md)
+      max-blob-bytes: 8388608        # 8 MiB
+      quota-bytes: 1073741824        # 1 GiB per user
+    messaging:
+      topic: grind-events

@@ -1,0 +1,45 @@
+# grind-worker settings for prod. Not packaged into the jar: Terraform stores this file in Secret Manager and mounts it
+# into the service. To change a value, edit it here and run `terraform apply` in deploy/terraform/envs/prod: Cloud Run
+# starts a new revision of the same image, with no rebuild.
+#
+# No secrets in this file. ${...} values are filled from Secret Manager at start-up (see modules/services).
+# Defaults shared by every environment stay in grind-worker/src/main/resources/config/application.yaml.
+# Replace every example before the first apply; terraform plan refuses to run while one is left.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://example.neon.tech/grind?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&channelBinding=require
+    username: grind_app
+    password: ${DB_APP_PASSWORD}
+    hikari:
+      # Connections per instance. Terraform checks max instances x this value against the database's limit.
+      maximum-pool-size: 5
+  cloud:
+    gcp:
+      project-id: grind-prod
+
+grind:
+  core:
+    storage:
+      endpoint: https://example.r2.cloudflarestorage.com
+      bucket: grind-prod-blobs
+      access-key-id: ${R2_ACCESS_KEY_ID}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY}
+  worker:
+    pubsub:
+      # The worker's Cloud Run URL plus /internal/events, as set on the push subscription.
+      push-audience: https://example.run.app/internal/events
+      push-service-account: pubsub-push@grind-prod.iam.gserviceaccount.com
+    scheduler:
+      # Cloud Scheduler starts the jobs with a token for this audience (the worker's URL), signed by this account.
+      audience: https://example.run.app
+      service-account: grind-scheduler@grind-prod.iam.gserviceaccount.com
+    supabase:
+      url: https://example.supabase.co
+      service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+      connect-timeout: 2s
+      request-timeout: 10s
+  # Who may read GET /internal/status (deploy/status.sh): a token from this account, for this service's own URL.
+  ops:
+    service-account: grind-ops@grind-prod.iam.gserviceaccount.com
+    audience: https://example.run.app

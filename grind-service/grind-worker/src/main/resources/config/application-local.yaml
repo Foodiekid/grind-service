@@ -1,0 +1,30 @@
+# grind-worker on a developer machine: local Postgres and the Pub/Sub emulator.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grind
+    username: grind_app
+    password: grind_app
+  cloud:
+    gcp:
+      project-id: grind-local
+      pubsub:
+        emulator-host: localhost:8085
+
+grind:
+  core:
+    storage:
+      endpoint: http://localhost:9000
+      bucket: grind-local
+      access-key-id: local
+      secret-access-key: local
+  worker:
+    pubsub:
+      push-audience: http://localhost:8080/internal/events
+      push-service-account: pubsub-push@grind-local.iam.gserviceaccount.com
+    scheduler:
+      audience: http://localhost:8080
+      service-account: grind-scheduler@grind-local.iam.gserviceaccount.com
+    supabase:
+      url: http://localhost:54321
+      service-role-key: local

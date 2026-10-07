@@ -1,0 +1,50 @@
+# Defaults for every GRIND service (shipped in grind-common). Loaded with the lowest precedence by
+# GrindDefaultsEnvironmentPostProcessor: a service's own application.yaml, its profile files and the deploy settings
+# all override them. Change a value here only if it should change for every service.
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-exception: false
+
+# Health. /livez and /readyz are on the public port for Cloud Run's probes and uptime checks; deploy checks use
+# GET /internal/status (operators only). Actuator itself listens on a port Cloud Run never exposes. Readiness checks
+# the application state; services with a database add it (management.endpoint.health.group.readiness.include).
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+        add-additional-paths: true
+      group:
+        readiness:
+          include: readinessState
+  info:
+    env:
+      enabled: false
+
+grind:
+  # Used only by services with @EnableGrindPublicApi.
+  public-api:
+    max-request-bytes: 262144        # 256 KiB; blobs never pass through the API
+    min-client-versions:
+      ios: 0.1.0
+      android: 0.1.0
+      web: 0.1.0
+    # API versions being retired, e.g.  v1: { deprecated-on: 2027-01-01, sunset-on: 2027-07-01 }
+    retiring-versions: {}

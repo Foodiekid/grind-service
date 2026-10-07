@@ -1,0 +1,88 @@
+# GRIND platform — one ignore file for the whole repository.
+# (Capacitor keeps its own small .gitignore files inside grind-app/ios and grind-app/android; they are generated.)
+
+# ── Secrets: environment files, keys, certificates, cloud credentials ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+*.crt
+*.cer
+*.mobileprovision
+*.provisionprofile
+keystore.properties
+service-account*.json
+*-credentials.json
+application-secrets.yaml
+
+# ── Data that may belong to a real person: local databases, route files, backups ──
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.gpx
+*.fit
+*.tcx
+grind-backup*.json
+!**/test*/**/fixtures/**
+
+# ── grind-app (React + Capacitor) ──
+node_modules/
+grind-app/dist/
+grind-app/coverage/
+grind-app/.vite/
+*.tsbuildinfo
+.eslintcache
+# copied in by `cap sync`
+grind-app/ios/App/App/public/
+grind-app/ios/App/App/capacitor.config.json
+grind-app/ios/App/App/config.xml
+grind-app/android/app/src/main/assets/public/
+grind-app/android/app/src/main/assets/capacitor.config.json
+grind-app/android/app/src/main/assets/capacitor.plugins.json
+grind-app/android/app/src/main/res/xml/config.xml
+# native build output
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.apk
+*.aab
+.gradle/
+local.properties
+
+# ── grind-service (Java / Maven / Terraform) ──
+target/
+.mvn/wrapper/maven-wrapper.jar
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ── Editors, OS, logs ──
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.swp
+*~
+*.log
+logs/

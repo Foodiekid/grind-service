@@ -1,0 +1,151 @@
+/* ═══════════════════════════════════════════════════════════
+   GRIND — Design tokens (v4 "Evolved dark")
+   One source of truth. Dark is the default; light redefines the same names.
+   Surfaces are flat and quiet; colour is reserved for meaning:
+     green  = recovery · optimal · the primary action
+     blue   = activity · steps · in range · focus
+     orange = training · strength (--train; --purple is kept as its old alias)
+     cyan   = sleep (--sleep) · pink = fat (--pink)
+     amber  = streaks · caution
+     red    = out of range · destructive
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: dark;
+
+  --bg:            #000000;
+  --surface:       #121215;
+  --surface-2:     #1b1b20;
+  --surface-3:     #27272e;
+  --surface-float: #18181c;
+  --scrim:         rgba(0, 0, 0, 0.58);
+  --bar:           rgba(10, 10, 12, 0.82);
+
+  --line:        rgba(255, 255, 255, 0.075);
+  --line-strong: rgba(255, 255, 255, 0.15);
+
+  --text:   #f4f4f6;
+  --text-2: #a8a8b3;
+  --text-3: #85858f;
+
+  --green:  #30e39c;
+  --blue:   #4da3ff;
+  --train:  #ff9f45;
+  --purple: var(--train);
+  --sleep:  #5ac8fa;
+  --pink:   #ff6fa8;
+  --amber:  #ffc24d;
+  --red:    #ff6b6b;
+  --on-accent: #04130b;
+  --amber-fill: var(--amber);
+
+  --green-soft:  rgba(48, 227, 156, 0.14);
+  --blue-soft:   rgba(77, 163, 255, 0.14);
+  --purple-soft: rgba(255, 159, 69, 0.15);
+  --amber-soft:  rgba(255, 194, 77, 0.14);
+  --red-soft:    rgba(255, 107, 107, 0.14);
+
+  --fill:       rgba(255, 255, 255, 0.07);
+  --fill-hover: rgba(255, 255, 255, 0.11);
+  --sep:        rgba(255, 255, 255, 0.09);
+
+  --shadow-card:  none;
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-sheet: 0 -6px 40px rgba(0, 0, 0, 0.55);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-2xs: 0.6875rem;
+  --fs-xs:  0.75rem;
+  --fs-sm:  0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md:  1.0625rem;
+  --fs-lg:  1.25rem;
+  --fs-xl:  1.625rem;
+  --fs-2xl: 2.125rem;
+  --fs-display: 3.25rem;
+
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+
+  --tap: 44px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-spring2: cubic-bezier(0.32, 1.12, 0.4, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 360ms;
+
+  --hair: 1px;
+
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  --nav-bar: 58px;                                     /* floating tab bar + Train button height */
+  --nav-gap: max(10px, calc(var(--sab) - 10px));       /* bar sits just above the home indicator */
+  --nav-h: 68px;
+  --topbar-h: 56px;
+  --sidebar-w: 248px;
+  --content-w: 1040px;
+}
+@media (min-resolution: 2dppx) { :root { --hair: 0.5px; } }
+/* Home Screen app: the status bar (clock, Dynamic Island) is drawn over the page, so give the app's own top bar a little
+   air below it. Everything that sits under the status bar (top bar, page, toasts, Live Island, sticky tabs) follows. */
+@media (display-mode: standalone) { :root { --sat: calc(env(safe-area-inset-top, 0px) + 10px); } }
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:            #f2f3f7;
+  --surface:       #ffffff;
+  --surface-2:     #f2f3f7;
+  --surface-3:     #e4e6ec;
+  --surface-float: #ffffff;
+  --scrim:         rgba(15, 20, 35, 0.34);
+  --bar:           rgba(248, 249, 252, 0.86);
+
+  --line:        rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.16);
+
+  --text:   #0b0d12;
+  --text-2: #4a5061;
+  --text-3: #5f6677;
+
+  --green:  #047a57;
+  --blue:   #0a55b8;
+  --train:  #b5530a;
+  --purple: var(--train);
+  --sleep:  #0a7ea4;
+  --pink:   #c2185b;
+  --amber:  #855000;
+  --red:    #c01f32;
+  --on-accent: #ffffff;
+  --amber-fill: #e89b12;
+
+  --green-soft:  rgba(4, 122, 87, 0.11);
+  --blue-soft:   rgba(10, 85, 184, 0.10);
+  --purple-soft: rgba(181, 83, 10, 0.10);
+  --amber-soft:  rgba(133, 80, 0, 0.11);
+  --red-soft:    rgba(192, 31, 50, 0.10);
+
+  --fill:       rgba(15, 23, 42, 0.05);
+  --fill-hover: rgba(15, 23, 42, 0.08);
+  --sep:        rgba(15, 23, 42, 0.08);
+
+  --shadow-card:  0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px -8px rgba(15, 23, 42, 0.10);
+  --shadow-float: 0 16px 40px -12px rgba(15, 23, 42, 0.22), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-sheet: 0 -8px 40px rgba(15, 23, 42, 0.14);
+}
+
+@media (prefers-contrast: more) {
+  :root { --line: rgba(128, 128, 128, 0.45); --line-strong: rgba(128, 128, 128, 0.7); --text-3: var(--text-2); }
+}

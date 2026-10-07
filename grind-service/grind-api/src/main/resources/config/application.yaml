@@ -1,0 +1,17 @@
+# grind-api: its own settings. Shared defaults (server, health, virtual threads, public-API and core limits) come from
+# grind-common and grind-core (grind/defaults/*.yaml); local runs add application-local.yaml (the default profile). On
+# Cloud Run, the dev or prod values come from deploy/config/<env>/grind-api.yaml, loaded from
+# SPRING_CONFIG_ADDITIONAL_LOCATION.
+
+spring:
+  application:
+    name: grind-api
+  profiles:
+    default: local
+  flyway:
+    # The API owns the schema. Migrations run as the owner role; the application connects as the app role, which is
+    # subject to row-level security. grind_support is the read-only role for support queries (row-level security on).
+    schemas: grind
+    placeholders:
+      app_role: ${spring.datasource.username}
+      support_role: grind_support

@@ -1,0 +1,23 @@
+# Copy to terraform.tfvars (git-ignored). Ids only — no secrets here.
+project_id            = "grind-dev"
+region                = "us-central1"
+billing_account_id    = "000000-000000-000000" # CHANGE-ME: gcloud billing projects describe <project_id>
+cloudflare_account_id = ""
+cloudflare_zone_id    = ""
+api_hostname          = ""
+neon_region           = "aws-us-east-2"
+
+# Images are pinned by digest, so a revision always runs the build that was tested.
+api_image    = "us-central1-docker.pkg.dev/grind-dev/grind/grind-api@sha256:CHANGE-ME"
+partner_image = "us-central1-docker.pkg.dev/grind-dev/grind/grind-partner@sha256:CHANGE-ME"
+worker_image = "us-central1-docker.pkg.dev/grind-dev/grind/grind-worker@sha256:CHANGE-ME"
+
+# Scaling. Peak database connections = api_max x api pool + worker_max x worker pool (pools: deploy/config/dev).
+api_min_instances    = 0
+api_max_instances    = 2
+partner_max_instances = 2
+worker_max_instances = 2
+database_connection_limit = 40
+
+# Who may run deploy/status.sh.
+operators = ["user:you@example.com"]

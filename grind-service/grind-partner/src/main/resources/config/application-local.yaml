@@ -1,0 +1,13 @@
+# grind-partner on a developer machine: no Cloudflare, local Supabase. No partners are configured locally, so the
+# connections endpoint answers connection_not_configured; add a block under grind.partners.providers to try one.
+
+grind:
+  public-api:
+    cors-origins:
+      - capacitor://localhost
+      - https://localhost
+      - http://localhost:5173
+    edge-secret: ""
+    auth:
+      supabase-jwks-uri: http://localhost:54321/auth/v1/.well-known/jwks.json
+      supabase-issuer: http://localhost:54321/auth/v1

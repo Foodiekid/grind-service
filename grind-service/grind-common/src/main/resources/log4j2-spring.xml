@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging for grind-api and grind-worker (shipped in grind-common, so both services log the same way).
+
+  Locally: one readable line per event, with the correlation id and user pseudonym when present.
+  dev / prod (Cloud Run): one JSON object per line in Google Cloud's format. Cloud Logging reads the severity, keeps
+  stack traces together, and turns the log fields (correlationId, eventId, user, client) into searchable labels.
+
+  Every line, from our code or any library, goes through SensitiveDataRewritePolicy before it is written.
+  Levels can still be changed per environment with logging.level.* in the application yaml.
+-->
+<Configuration status="WARN">
+    <Properties>
+        <Property name="LOCAL_PATTERN">%d{HH:mm:ss.SSS} %highlight{%-5level} %notEmpty{[%X{correlationId}] }%notEmpty{%X{user} }%c{1.} - %m%n%ex{full}</Property>
+    </Properties>
+
+    <Appenders>
+        <SpringProfile name="dev | prod">
+            <Console name="Console" target="SYSTEM_OUT">
+                <JsonTemplateLayout eventTemplateUri="classpath:GcpLayout.json"/>
+            </Console>
+        </SpringProfile>
+        <SpringProfile name="!dev &amp; !prod">
+            <Console name="Console" target="SYSTEM_OUT">
+                <PatternLayout pattern="${LOCAL_PATTERN}"/>
+            </Console>
+        </SpringProfile>
+
+        <Rewrite name="Masked">
+            <SensitiveDataRewritePolicy/>
+            <AppenderRef ref="Console"/>
+        </Rewrite>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.grindandtrain" level="info"/>
+        <!-- Security-relevant actions: always kept, whatever the level of other loggers. -->
+        <Logger name="com.grindandtrain.audit" level="info"/>
+        <!-- One line per request. -->
+        <Logger name="com.grindandtrain.access" level="info"/>
+
+        <Root level="info">
+            <AppenderRef ref="Masked"/>
+        </Root>
+    </Loggers>
+</Configuration>

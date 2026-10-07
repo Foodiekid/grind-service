@@ -1,0 +1,21 @@
+# grind-worker: its own settings. Shared defaults (server, health, virtual threads, core limits) come from
+# grind-common and grind-core (grind/defaults/*.yaml); local runs add application-local.yaml (the default profile). On
+# Cloud Run, the dev or prod values come from deploy/config/<env>/grind-worker.yaml, loaded from
+# SPRING_CONFIG_ADDITIONAL_LOCATION.
+
+spring:
+  application:
+    name: grind-worker
+  profiles:
+    default: local
+
+grind:
+  worker:
+    supabase:
+      # A hung Supabase call fails the event instead of holding a thread; Pub/Sub retries it later.
+      connect-timeout: 2s
+      request-timeout: 10s
+    jobs:
+      time-budget: 20m             # one run's working time; Scheduler's attempt deadline must be longer
+      orphan-blob-age: 14d         # longer than Pub/Sub's 7-day retention, so a late commit never loses its blob
+      deletion-resume-after: 24h

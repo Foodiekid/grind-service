@@ -1,0 +1,32 @@
+# grind-api on a developer machine: local Postgres, Pub/Sub emulator, no Cloudflare.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grind
+    username: grind_app
+    password: grind_app
+  flyway:
+    user: grind_owner
+    password: grind_owner
+  cloud:
+    gcp:
+      project-id: grind-local
+      pubsub:
+        emulator-host: localhost:8085
+
+grind:
+  core:
+    storage:
+      endpoint: http://localhost:9000
+      bucket: grind-local
+      access-key-id: local
+      secret-access-key: local
+  public-api:
+    cors-origins:
+      - capacitor://localhost
+      - https://localhost
+      - http://localhost:5173
+    edge-secret: ""
+    auth:
+      supabase-jwks-uri: http://localhost:54321/auth/v1/.well-known/jwks.json
+      supabase-issuer: http://localhost:54321/auth/v1

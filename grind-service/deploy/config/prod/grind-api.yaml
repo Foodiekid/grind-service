@@ -1,0 +1,47 @@
+# grind-api settings for prod. Not packaged into the jar: Terraform stores this file in Secret Manager and mounts it
+# into the service. To change a value, edit it here and run `terraform apply` in deploy/terraform/envs/prod: Cloud Run
+# starts a new revision of the same image, with no rebuild.
+#
+# No secrets in this file. ${...} values are filled from Secret Manager at start-up (see modules/services).
+# Defaults shared by every environment stay in grind-api/src/main/resources/config/application.yaml.
+# Replace every CHANGE-ME before the first apply; terraform plan refuses to run while one is left.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://CHANGE-ME.neon.tech/grind?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&channelBinding=require
+    username: grind_app
+    password: ${DB_APP_PASSWORD}
+    hikari:
+      # Connections per instance. Terraform checks max instances x this value against the database's limit.
+      maximum-pool-size: 5
+  flyway:
+    user: grind_owner
+    password: ${DB_OWNER_PASSWORD}
+  cloud:
+    gcp:
+      project-id: grind-prod
+
+grind:
+  core:
+    storage:
+      endpoint: https://CHANGE-ME.r2.cloudflarestorage.com
+      bucket: grind-prod-blobs
+      access-key-id: ${R2_ACCESS_KEY_ID}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY}
+  public-api:
+    cors-origins:
+      - capacitor://localhost
+      - https://localhost
+    edge-secret: ${EDGE_SECRET}
+    auth:
+      supabase-jwks-uri: https://CHANGE-ME.supabase.co/auth/v1/.well-known/jwks.json
+      supabase-issuer: https://CHANGE-ME.supabase.co/auth/v1
+    # Raise a platform's minimum to retire old app builds (they get 426 Upgrade Required).
+    min-client-versions:
+      ios: 0.1.0
+      android: 0.1.0
+      web: 0.1.0
+  # Who may read GET /internal/status (deploy/status.sh): a token from this account, for this service's own URL.
+  ops:
+    service-account: grind-ops@grind-prod.iam.gserviceaccount.com
+    audience: https://CHANGE-ME.run.app

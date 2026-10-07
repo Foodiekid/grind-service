@@ -1,0 +1,48 @@
+# grind-partner settings for prod. Not packaged into the jar: Terraform stores this file in Secret Manager and mounts
+# it into the service. To change a value, edit it here and run `terraform apply` in deploy/terraform/envs/prod: Cloud
+# Run starts a new revision of the same image, with no rebuild.
+#
+# No secrets in this file. ${...} values are filled from Secret Manager at start-up (see modules/services).
+# The public-api block must stay identical to the one in grind-api.yaml (a build test checks it): both services
+# answer the same app under the same rules. No database settings: this service has none.
+# Replace every example before the first apply; terraform plan refuses to run while one is left.
+
+grind:
+  public-api:
+    cors-origins:
+      - capacitor://localhost
+      - https://localhost
+    edge-secret: ${EDGE_SECRET}
+    auth:
+      supabase-jwks-uri: https://example.supabase.co/auth/v1/.well-known/jwks.json
+      supabase-issuer: https://example.supabase.co/auth/v1
+    # Raise a platform's minimum to retire old app builds (they get 426 Upgrade Required).
+    min-client-versions:
+      ios: 0.1.0
+      android: 0.1.0
+      web: 0.1.0
+  # GRIND's registered OAuth apps (token broker only: the server stores no tokens and never reads health data).
+  # Delete a provider's block to switch it off here; the service then answers connection_not_configured.
+  # Redirect URIs must match the ones registered in each provider's developer dashboard exactly.
+  partners:
+    providers:
+      oura:
+        token-uri: https://api.ouraring.com/oauth/token
+        client-id: example
+        client-secret: ${OURA_CLIENT_SECRET}
+        redirect-uris:
+          - com.grindandtrain.app:/oauth/oura
+        connect-timeout: 2s
+        request-timeout: 10s
+      whoop:
+        token-uri: https://api.prod.whoop.com/oauth/oauth2/token
+        client-id: example
+        client-secret: ${WHOOP_CLIENT_SECRET}
+        redirect-uris:
+          - com.grindandtrain.app:/oauth/whoop
+        connect-timeout: 2s
+        request-timeout: 10s
+  # Who may read GET /internal/status (deploy/status.sh): a token from this account, for this service's own URL.
+  ops:
+    service-account: grind-ops@grind-prod.iam.gserviceaccount.com
+    audience: https://example.run.app

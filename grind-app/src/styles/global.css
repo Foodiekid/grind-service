@@ -1,0 +1,63 @@
+/* Global base. Tokens come from tokens.css (copied unchanged from the web app, 2026-10-06).
+   Layer order is fixed here once so later files never need !important (lesson from the web app's CSS war). */
+@layer reset, base, components, screens, utilities;
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: var(--fs-base);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  #root { min-height: 100%; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .shell { display: flex; flex-direction: column; min-height: 100dvh; }
+
+  .screen {
+    flex: 1;
+    padding: calc(env(safe-area-inset-top) + 24px) 20px calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px);
+  }
+  .screen-title { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -0.02em; }
+  .screen-note { margin-top: 8px; color: var(--text-2); }
+
+  .tabbar {
+    position: fixed;
+    inset: auto 12px calc(env(safe-area-inset-bottom) + 10px) 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 6px;
+    border-radius: var(--r-full);
+    background: var(--bar);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--line);
+  }
+  .tab {
+    flex: 1;
+    min-height: var(--tap);
+    border-radius: var(--r-full);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text-2);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .tab[aria-current='page'] { background: var(--fill); color: var(--text); }
+}

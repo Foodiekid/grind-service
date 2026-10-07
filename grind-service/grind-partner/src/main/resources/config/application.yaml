@@ -1,0 +1,14 @@
+# grind-partner: its own settings. Shared defaults (server, health, virtual threads, public-API) come from grind-common
+# (grind/defaults/common.yaml); local runs add application-local.yaml (the default profile). On Cloud Run, the dev or
+# prod values come from deploy/config/<env>/grind-partner.yaml, loaded from SPRING_CONFIG_ADDITIONAL_LOCATION.
+# No database, so readiness is the application state only (the grind-common default).
+
+spring:
+  application:
+    name: grind-partner
+  profiles:
+    default: local
+
+grind:
+  public-api:
+    max-request-bytes: 16384         # 16 KiB; token requests are tiny
